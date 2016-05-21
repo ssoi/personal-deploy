@@ -1,20 +1,18 @@
 ---
-hosts: server
-vars_files:
-  - vars.yml
-gather_facts: false
-sudo: true
+- hosts: server
+  gather_facts: false
+  sudo: true
+  
+  tasks:
+  - name: create user
+    user: home=/home/{{ user }} name={{ user }} state=present
 
-tasks:
-- name: create user
-  user: home=/home/{{ user }} name={{ user }} state=present
+  - name: install security-relaed packages
+    apt: pkg={{ item }} state=installed update-cache=yes
+    with_items:
+      - fail2ban
+      - tripwire
+      - unattended-upgrades
 
-- name: install security-relaed packages
-  apt: pkg={{ item }} state=installed update-cache=yes
-  with_items:
-    - fail2ban
-    - tripwire
-    - unattended-upgrades
-
-- name: execute security related tasks
-  include: tasks/security.yml
+  - name: copy over jail.conf to jail.local
+    copy: /etc/fail2ban/jail.conf /etc/fail2ban/jail.local

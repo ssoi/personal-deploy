@@ -2,10 +2,21 @@
 - hosts: server
   gather_facts: false
   sudo: true
+  vars_files:
+    - vars.yml
+  
+  handlers:
+  - name: restart fail2ban
+    service: name=fail2ban state=restarted
   
   tasks:
   - name: create user
     user: home=/home/{{ user }} name={{ user }} state=present
+
+  - name: copy user ssh key
+    authorized_key: user={{ user }} key="{{ item }}"
+    with_file: 
+      - files/ssh/{{ user }}.pub
 
   - name: install security-relaed packages
     apt: pkg={{ item }} state=installed update-cache=yes
@@ -15,4 +26,5 @@
       - unattended-upgrades
 
   - name: copy over jail.conf to jail.local
-    copy: /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+    command: cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+    notify: restart fail2ban

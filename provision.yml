@@ -6,9 +6,12 @@
     - vars.yml
   
   handlers:
+  - name: restart ssh
+    service: name=ssh state=restarted
+
   - name: restart fail2ban
     service: name=fail2ban state=restarted
-  
+
   tasks:
   - name: create user
     user: home=/home/{{ user }} name={{ user }} state=present
@@ -17,6 +20,13 @@
     authorized_key: user={{ user }} key="{{ item }}"
     with_file: 
       - files/ssh/{{ user }}.pub
+
+  - name: disable password authentication
+    lineinfile: dest=/etc/ssh/sshd_config
+                regexp="^PasswordAuthentication"
+                line="PasswordAuthentication no"
+                state=present
+    notify: restart ssh
 
   - name: install security-relaed packages
     apt: pkg={{ item }} state=installed update-cache=yes

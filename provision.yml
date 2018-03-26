@@ -2,15 +2,19 @@
 - hosts: server
   gather_facts: false
   sudo: true
-  vars_files:
-    - vars.yml
-  
-  handlers:
-  - name: restart ssh
-    service: name=ssh state=restarted
-
-  - name: restart fail2ban
-    service: name=fail2ban state=restarted
+  vars:
+    user: admin
+    ssh_port: 2202
+    packages:
+      - python
+      - ufw
+      - fail2ban
+      - nginx
+      - unattended-upgrades
+    allowed_ports:
+      - 2202
+      - 80
+      - 443
 
   tasks:
   - name: Update APT packages cache
@@ -25,7 +29,7 @@
   - name: copy user ssh key
     authorized_key: user={{ user }} key="{{ item }}"
     with_file: 
-      - files/ssh/{{ user }}.pub
+      - "files/ssh/{{ user }}_rsa.pub"
 
   - name: disable password authentication
     lineinfile: dest=/etc/ssh/sshd_config
@@ -34,19 +38,19 @@
                 state=present
     notify: restart ssh
 
-  - name: Disallow root SSH access
-    lineinfile: dest=/etc/ssh/sshd_config
-                regexp="^PermitRootLogin"
-                line="PermitRootLogin no"
-                state=present
-    notify: restart ssh
+#  - name: Disallow root SSH access
+#    lineinfile: dest=/etc/ssh/sshd_config
+#                regexp="^PermitRootLogin"
+#                line="PermitRootLogin no"
+#                state=present
+#    notify: restart ssh
 
   - name: install packages
     apt: pkg={{ item }} state=installed update-cache=yes
     with_items:
-      - ufw
-      - fail2ban
-      - unattended-upgrades
+      - "{{ packages }}"
+  - name: Unattended-upgrades only installs from $ubuntu_release-security
+    action: lineinfile dest=/etc/apt/apt.conf.d/50unattended-upgrades regexp="$ubuntu_release-updates" state=absent
 
   - name: setup ufw
     ufw: state=enabled policy=deny
@@ -55,3 +59,11 @@
     ufw: rule=allow port={{ item }}
     with_items:
       - "{{ allowed_ports }}"
+
+  handlers:
+  - name: restart ssh
+    service: name=ssh state=restarted
+
+  - name: restart fail2ban
+    service: name=fail2ban state=restarted
+

@@ -41,15 +41,17 @@
                 state=present
     notify: restart ssh
 
-  - name: install security-relaed packages
+  - name: install packages
     apt: pkg={{ item }} state=installed update-cache=yes
     with_items:
+      - ufw
       - fail2ban
-      - tripwire
       - unattended-upgrades
 
   - name: setup ufw
     ufw: state=enabled policy=deny
 
-  - name: allow ssh traffic
-    ufw: rule=allow port={{ ssh_port }} proto=tcp
+  - name: Allow ssh and http(s) connections
+    ufw: rule=allow port={{ item }}
+    with_items:
+      - "{{ allowed_ports }}"

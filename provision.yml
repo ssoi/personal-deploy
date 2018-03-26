@@ -52,4 +52,4 @@
     ufw: state=enabled policy=deny
 
   - name: allow ssh traffic
-    ufw: rule=allow port={{ SSH_PORT }} proto=tcp
+    ufw: rule=allow port={{ ssh_port }} proto=tcp

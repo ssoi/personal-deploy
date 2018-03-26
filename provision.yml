@@ -13,6 +13,12 @@
     service: name=fail2ban state=restarted
 
   tasks:
+  - name: Update APT packages cache
+    apt: update_cache=yes
+
+  - name: upgrade APT to the latest packages
+    apt: upgrade=safe
+
   - name: create user
     user: home=/home/{{ user }} name={{ user }} state=present
 
@@ -28,6 +34,13 @@
                 state=present
     notify: restart ssh
 
+  - name: Disallow root SSH access
+    lineinfile: dest=/etc/ssh/sshd_config
+                regexp="^PermitRootLogin"
+                line="PermitRootLogin no"
+                state=present
+    notify: restart ssh
+
   - name: install security-relaed packages
     apt: pkg={{ item }} state=installed update-cache=yes
     with_items:
@@ -35,6 +48,8 @@
       - tripwire
       - unattended-upgrades
 
-  - name: copy over jail.conf to jail.local
-    command: cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-    notify: restart fail2ban
+  - name: setup ufw
+    ufw: state=enabled policy=deny
+
+  - name: allow ssh traffic
+    ufw: rule=allow port={{ SSH_PORT }} proto=tcp

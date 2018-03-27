@@ -60,6 +60,20 @@
     with_items:
       - "{{ allowed_ports }}"
 
+  - name: upload nginx config
+    copy:
+        src: files/nginx/sameersoi.com.conf
+        dest: /etc/nginx/conf.d/
+        owner: {{ user }}
+        mode: 0644
+
+  - name: upload nginx config
+    file:
+        path: /usr/local/nginx/sameersoi.com
+        state: directory
+        owner: {{ user }}
+        mode: 0755
+
   handlers:
   - name: restart ssh
     service: name=ssh state=restarted
